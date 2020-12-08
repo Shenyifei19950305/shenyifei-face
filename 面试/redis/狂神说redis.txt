@@ -1,0 +1,167 @@
+一级缓存 二级 三级 需查询
+
+redis启动
+
+redis是内存数据库，所以速度快
+
+五大类型---String list set map zset
+keys *
+set name shenyifei
+EXISTS name
+move name
+EXPIRE name 10
+ttl name
+type name
+APPEND name "19950305"
+STELEN name
+set step 0
+incr step 
+decr step
+INCRBY step 10
+set name "ShenYiFei,Helloworld"
+GETRANGE name 0 3
+GETRANGE name 0 -1
+
+# setex (set with expire) # 设置过期时间 
+# setnx (set if not exist) # 不存在在设置 （在分布式锁中会常常使用！）
+
+mset name a name1 b name2 c
+mget name name1 name 2
+
+第二种类型 -List。。。。。。
+
+
+三种特殊数据类型
+Geosptatial 地理位置
+Hyperloglog 基数 不重复元素（一个人访问一个网站多次，但是还是算作一个人）
+Bitmap 打卡 只有0和1两个状态
+
+事务
+开启事务（mult）。。。。。。执行事务（exec）
+放弃事务 DISCARD
+
+监控watch 相当于乐观锁，加在multi前面，防止执行事务时，另外一个线程修改数据
+
+Jedis相当于JDBC java操作redis中间件
+通过JSONobject 来操作
+
+Springboot 进行整合
+不采用jedis 而是用lettuce（Netty技术），不存在线程不安全情况，可以减少线程数据，NIO
+源码的泛型 是<object, object>,所以每次整合redisTemplate 就需要重写<Stirng,Object>
+一般redisTemplate都是进行自定义
+自带模板用redisTemplate.opsFor.....接类型(五大类型加三个额外类型）
+注意，redis如果没有进行序列化 用Json传递对象会报错，解决办法 自带的jdk序列化 或者自定义一个
+自己的redistemplate模板 实现五种类型的序列化----脚本（写好的）
+
+redis conf文件----
+
+========================================================
+
+
+内存达到上限的六种策略
+1、volatile-lru：只对设置了过期时间的key进行LRU（默认值） 
+2、allkeys-lru ： 删除lru算法的key 
+3、volatile-random：随机删除即将过期key 
+4、allkeys-random：随机删除 
+5、volatile-ttl ： 删除即将过期的 
+6、noeviction ： 永不过期，返回错误
+
+AOF 默认是不开启的 假如两个一起开启 会先才采用AOF
+
+RDB和AOF 持久化的两种方式 
+RDB
+可以自己设置 默认90s 改一次 300s改10次 60s 改。。。。根据条件自己保存
+持久化过程
+父进程会fork一个子进程，将内存内容写入一个临时的一个RDB的文件，快照写入完成后覆盖原来额
+正式RDB文件，主进程不进行任何的IO操作，确保了较高的性能。RDB的缺点是最后一次持久化的数据可能丢死
+redis默认的是RDB
+优点:适合大规模的数据恢复 对数据的完整性要求不高
+缺点：宕机了，最后一次数据会没掉，fork进程时会占用一定的内存
+
+
+AOF
+每秒记录一次，最慢也是3s记录一次
+以日志形式来记录每个操作（读操作不记录），只许追加不修改。如果aof文件大于64m会fork一个新的
+的进程进行重写
+优缺点
+优点：文件完整性好 只会丢失一点点数据 不同步 效率高
+缺点： aof比较臃肿，文件修复速度慢 运行速度也比较慢
+
+性能建议(原文）
+因为RDB文件只用作后备用途，建议只在Slave上持久化RDB文件，而且只要15分钟备份一次就够
+了，只保留 save 900 1 这条规则。
+如果Enable AOF ，好处是在最恶劣情况下也只会丢失不超过两秒数据，启动脚本较简单只load自
+己的AOF文件就可以了，代价一是带来了持续的IO，二是AOF rewrite 的最后将 rewrite 过程中产
+生的新数据写到新文件造成的阻塞几乎是不可避免的。只要硬盘许可，应该尽量减少AOF rewrite
+的频率，AOF重写的基础大小默认值64M太小了，可以设到5G以上，默认超过原大小100%大小重
+写可以改到适当的数值。
+如果不Enable AOF ，仅靠 Master-Slave Repllcation 实现高可用性也可以，能省掉一大笔IO，也
+减少了rewrite时带来的系统波动。代价是如果Master/Slave 同时倒掉，会丢失十几分钟的数据，
+启动脚本也要比较两个 Master/Slave 中的 RDB文件，载入较新的那个，微博就是这种架构。
+
+redis可以发布订阅，也可以进行建群聊（简单的）
+通过 PUBLISH 、SUBSCRIBE 和 PSUBSCRIBE 等命令实现发布和订阅功能
+
+
+redis主从复制（一般最少都是一主二从）可以通过docker进行主从复制的搭建
+
+哨兵模式 sentinel conf一般都是网上找先配置好 然后启动
+一旦，主机宕机了，根据投票数自动将丛库转换成主库，当然，哨兵也有可以进行集群
+
+这里的哨兵有两个作用
+通过发送命令，让Redis服务器返回监控其运行状态，包括主服务器和从服务器。
+当哨兵监测到master宕机，会自动将slave切换成master，然后通过发布订阅模式通知其他的从服
+务器，修改配置文件，让它们切换主机。
+
+Redis缓存穿透和雪崩 还有一个击穿
+缓存穿透就是redis缓存找不到（没命中） 会去持久层数据库找，如果大量缓存没有命中 会给
+数据库造成很大压力
+解决方案
+布隆过滤器： 对有可能的关键字进行hash进行存储，在控制层进行校验 不符合规则的丢弃，减少压力
+2、返回一个空对象存储起来当缓存，设置过期时间即可，不过会占用大量空间还有可能缓存和数据库的数据不一致
+
+缓存击穿
+一个热点Key非常热点，大并发，一旦关键字缓存期一过，会击穿数据库
+解决1.热点永不过期
+2.加互斥锁(分布式锁)，只有一个线程进去，其他线程等待
+
+
+缓存雪崩
+和击穿差不多 一瞬间宕机了 缓存过期失效 突然迎来高并发 没有缓存层了存储层直接挂掉
+解决方案
+集群（异地多活）
+限流降级熔断
+数据预热
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

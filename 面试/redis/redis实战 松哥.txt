@@ -1,0 +1,22 @@
+spring session +redis实现Session共享、
+
+添加pom完成后 配置为redis的基本信息 然后就可以直接在controller层直接使用
+httpsession就可以完成集群共享信息
+
+配置nginx 在nginx自己的config里面配置服务器集群的名字
+然后再配置权重 还有转发地址
+部署到服务器上 
+
+还是比较简单的
+
+
+redis实现缓存 先进行cache缓存配置类 然后在service层对接口直接用@cacheconfig 也可以用@cacheable
+@cacheput @cacheevit进行定点缓存
+
+
+
+后面还有一些
+
+工作问题总结
+redis做消息队列有缺陷 换成了rabitmq
+为什么redis要换成rabitmq

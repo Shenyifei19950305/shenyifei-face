@@ -1,0 +1,16 @@
+首先 先git clone 地址
+
+我们可以用git status 查看哪里做出了修改 修改过的会是红色的
+git add 文件名  
+接下来用git commit -m 提交到本地仓库
+最后git push到远程仓库
+
+有时候会发生冲突 公司的人同时提交 
+这时候可以用git pull 先从仓库拉下来 手动解决冲突后 再一次上之前的步骤提交
+如果git pull 用不了 就git stash提交到暂存区 再进行pull
+
+公司一般两个分支
+一个master 一个dev
+开发用的是dev 然后我么自己也有很多小分支
+可以用git branch进行查看分支
+针对分支 可以用checkout进行切换 创建 用merge进行合并 
